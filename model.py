@@ -85,4 +85,12 @@ def train(model, train_dataloader, val_dataloader, criterion, optimizer, schedul
         scheduler.step(avg_val_loss)
         # print("Learning rate: ", scheduler.get_last_lr()[0])
 
-        return avg_epoch_train_loss, model.state_dict()
+        weights = model.state_dict()
+        return avg_epoch_train_loss, weights
+    
+'''
+Usage:
+    
+    python server.py
+    
+'''

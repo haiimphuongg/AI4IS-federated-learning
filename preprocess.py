@@ -7,7 +7,7 @@ Nhóm 11:
     21120312 - Phan Nguyên Phương
 
 '''
-
+import pandas as pd
 import torch
 from torchvision import datasets, transforms, models
 import numpy as np
@@ -100,7 +100,7 @@ def extract_hog_for_dataset(dataset):
 
 def extract_cnn_features(cnn_model, dataset, batch_size=32, device='cuda' if torch.cuda.is_available() else 'cpu'):
     # Load ResNet50 pre-trained model and remove the last fully connected layer
-    cnn_model = cnn_model.to('cuda')
+    cnn_model = cnn_model.to(device)
     cnn_model.eval()  # Set to evaluation mode
 
     # DataLoader for batch processing
@@ -127,28 +127,53 @@ def extract_cnn_features(cnn_model, dataset, batch_size=32, device='cuda' if tor
     return TensorDataset(features, labels)
 
 
-def prepare_data(train_dataset, targets, extract_method = 'hog'):
-    train_dataset_splited, val_dataset_splited = split_train_val(train_dataset, targets)
+def prepare_data(train_dataset, targets, extract_method = 'hog', device='cuda' if torch.cuda.is_available() else 'cpu'):
+    train_dataset_splited, val_dataset_splited = split_train_val(train_dataset, targets, train_size=0.8)
     if extract_method == 'hog':
         train_dataset_extracted = extract_hog_for_dataset(train_dataset_splited)
         val_dataset_extracted = extract_hog_for_dataset(val_dataset_splited)
     else:
         cnn_model = models.resnet34(pretrained=True)
         cnn_model = nn.Sequential(*list(cnn_model.children())[:-1])  # Remove last fully connected layer
-        cnn_model = cnn_model.to('cuda')
+        cnn_model = cnn_model.to(device)
         
-        train_dataset_extracted = extract_cnn_features(cnn_model,train_dataset_splited,batch_size=256)
+        train_dataset_extracted = extract_cnn_features(cnn_model, train_dataset_splited,batch_size=256)
         val_dataset_extracted = extract_cnn_features(cnn_model, val_dataset_splited, batch_size=256)
     
-    train_dataloader = DataLoader(train_dataset_extracted, batch_size = 256, shuffle=True)
-    val_dataloader = DataLoader(val_dataset_extracted, batch_size = 256, shuffle=True)
+    return train_dataset_extracted, val_dataset_extracted
 
 
-    # train_dataset_splited, val_dataset_splited, train_dataset_extracted, val_dataset_extracted, train_dataloader, val_dataloader, 
-    return train_dataset_extracted, train_dataloader, val_dataloader
+def export_csv(dataset, filename, method_extract='hog'):
+    if method_extract == 'hog':
+        data = dataset.data.numpy()
+        labels = dataset.labels.numpy()
+    else:
+        data, labels = dataset.tensors
+        data = data.numpy()
+        labels = labels.numpy()
+
+    df = pd.DataFrame(data)
+    df['label'] = labels  # Add labels as the last column
+    
+    df.to_csv(filename, index=False)
 
 
-def get_dataloader(client_id=1, extract_method='hog'):
+def create_dataloader(dataset, batch_size=256):    
+    data = dataset.iloc[:, :-1].values
+    labels = dataset['label'].values
+    
+    # Convert to PyTorch tensors
+    data_tensor = torch.tensor(data, dtype=torch.float32)
+    labels_tensor = torch.tensor(labels, dtype=torch.long)
+
+    # Create dataloaders
+    dataset = TensorDataset(data_tensor, labels_tensor)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    
+    return dataloader
+
+
+def save_dataset_to_csv():
     np.random.seed(42)
 
     # Load dataset
@@ -173,8 +198,35 @@ def get_dataloader(client_id=1, extract_method='hog'):
 
     # Split data among clients
     client_indices = split_client_data_indices(targets, client1_classes, client2_classes, client3_classes)
-    client_indices = client_indices[client_id-1]
-    client_dataset = Subset(train_dataset, client_indices)
-    train_dataset_extracted, client_train_loader, client_val_loader = prepare_data(client_dataset, targets[client_indices], extract_method)
+
+    client1_dataset = Subset(train_dataset, client_indices[0])
+    client2_dataset = Subset(train_dataset, client_indices[1])
+    client3_dataset = Subset(train_dataset, client_indices[2])
+
+    client1_train_dataset_HOG, client1_val_dataset_HOG = prepare_data(client1_dataset, targets[client_indices[0]], 'hog')
+    client2_train_dataset_HOG, client2_val_dataset_HOG = prepare_data(client2_dataset, targets[client_indices[1]], 'hog')
+    client3_train_dataset_HOG, client3_val_dataset_HOG = prepare_data(client3_dataset, targets[client_indices[2]], 'hog')
+
+    client1_train_dataset_CNN, client1_val_dataset_CNN = prepare_data(client1_dataset, targets[client_indices[0]], 'cnn')
+    client2_train_dataset_CNN, client2_val_dataset_CNN = prepare_data(client2_dataset, targets[client_indices[1]], 'cnn')
+    client3_train_dataset_CNN, client3_val_dataset_CNN = prepare_data(client3_dataset, targets[client_indices[2]], 'cnn')
     
-    return train_dataset_extracted, client_train_loader, client_val_loader
+    # Export file
+    export_csv(client1_train_dataset_HOG, "client1_train_dataset_HOG.csv")
+    export_csv(client2_train_dataset_HOG, "client2_train_dataset_HOG.csv")
+    export_csv(client3_train_dataset_HOG, "client3_train_dataset_HOG.csv")
+    export_csv(client1_val_dataset_HOG, "client1_val_dataset_HOG.csv")
+    export_csv(client2_val_dataset_HOG, "client2_val_dataset_HOG.csv")
+    export_csv(client3_val_dataset_HOG, "client3_val_dataset_HOG.csv")
+
+    export_csv(client1_train_dataset_CNN, "client1_train_dataset_CNN.csv", 'cnn')
+    export_csv(client2_train_dataset_CNN, "client2_train_dataset_CNN.csv", 'cnn')
+    export_csv(client3_train_dataset_CNN, "client3_train_dataset_CNN.csv", 'cnn')
+    export_csv(client1_val_dataset_CNN, "client1_val_dataset_CNN.csv", 'cnn')
+    export_csv(client2_val_dataset_CNN, "client2_val_dataset_CNN.csv", 'cnn')
+    export_csv(client3_val_dataset_CNN, "client3_val_dataset_CNN.csv", 'cnn')
+
+
+if __name__ == "__main__":
+    # save_dataset_to_csv()     # Uncomment this line to export csv file
+    pass
