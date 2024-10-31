@@ -228,5 +228,5 @@ def save_dataset_to_csv():
 
 
 if __name__ == "__main__":
-    # save_dataset_to_csv()     # Uncomment this line to export csv file
-    pass
+    save_dataset_to_csv()     # Uncomment this line to export csv file
+    # pass
