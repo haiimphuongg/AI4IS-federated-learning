@@ -11,6 +11,7 @@ Nhóm 11:
 import socket
 import argparse
 import pickle
+import ast
 
 import pandas as pd
 import torch
@@ -47,15 +48,11 @@ def client_train(model, train_loader, val_loader, lr, betas, weight_decay, num_e
 
     loss, weights = train(model, train_loader, val_loader, criterion, optimizer, scheduler, num_epochs, show_step = 10)
 
-    # for _ in range(5):
-    #     print('Processing...')
-
     serialized_weights = pickle.dumps(weights)
     return serialized_weights
 
 
-def main(client_id, method_extract, lr, betas, weight_decay, num_epochs):
-    
+def main(client_id, method_extract, lr, betas, weight_decay, num_epochs, iterations):
     extension = 'dataset_HOG.csv' if method_extract == 'hog' else 'dataset_CNN.csv'
     train_filename = "client" + str(client_id) + "_train_" + extension
     val_filename = "client" + str(client_id) + "_val_" + extension
@@ -72,14 +69,12 @@ def main(client_id, method_extract, lr, betas, weight_decay, num_epochs):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = Classifier(train_dataset_extracted.shape[1] - 1, 10).to(device) ##### CHECK AGAIN
 
-    connected = 10
     while True:
         # print(f'------ Loop {connected} -----')
         
         weights = client_train(model, train_dataloader, val_dataloader, lr, betas, weight_decay, num_epochs)
         
-        if weights is None or connected == 0:
-            msg = DISCONNECT_MSG
+        if weights is None or iterations == 0:
             break
         else:
             weights_length = len(weights).to_bytes(4, 'big')  # 4-byte integer
@@ -96,7 +91,7 @@ def main(client_id, method_extract, lr, betas, weight_decay, num_epochs):
 
         # print(f"[SERVER SEND BACK] {averaged_weights}")
         
-        connected -= 1
+        iterations -= 1
 
     client.close()
 
@@ -106,24 +101,28 @@ if __name__ == "__main__":
     parser.add_argument("client_id", type=int, choices=[1, 2, 3], help="Client ID (1, 2, or 3)")
     parser.add_argument("--method_extract", type=str, choices=['hog', 'cnn'], default='hog', help="Feature extraction method (default: 'hog')")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate (default: 0.001)")
-    parser.add_argument("--betas", type=tuple, default=(0.9, 0.999), help="Betas for optimizer (default: (0.9, 0.999))")
+    parser.add_argument("--betas", type=float, nargs='+', default=[0.9, 0.999], help="Betas for optimizer (default: 0.9 0.999)")
     parser.add_argument("--weight_decay", type=float, default=0.0001, help="Weight decay for optimizer (default: 0.0001)")
-    parser.add_argument("--num_epochs", type=int, default=50, help="Number of epochs (default: 3)")
-
+    parser.add_argument("--num_epochs", type=int, default=1, help="Number of epochs (default: 1)")
+    parser.add_argument("--train_iterations", type=int, default=10, help="number of model training iterations (default: 10)")
     args = parser.parse_args()
 
-    main(args.client_id, args.method_extract, args.lr, args.betas, args.weight_decay, args.num_epochs)
+    main(args.client_id, args.method_extract, args.lr, args.betas, args.weight_decay, args.num_epochs, args.train_iterations)
 
 '''
 Usage: 
 
-    python client.py [client-id] --method_extract ['hog', 'cnn'] --lr [learning-rate] --betas [betas] --weight_decay [wd] --num_epochs [num]
+    python client.py [client-id] --method_extract ['hog', 'cnn'] --lr [learning-rate] --betas [betas] --weight_decay [wd] --num_epochs [num] --train_iterations [num]
 
 Example: 
     
-    python client.py 1 --method_extract cnn --lr 0.01 --betas "(0.9, 0.999)" --weight_decay 0.0005 --num_epochs 50
+    python client.py 1 --method_extract cnn --lr 0.01 --betas 0.9 0.999 --weight_decay 0.0005 --num_epochs 1 --train_iterations 10
+    python client.py 2 --method_extract cnn --lr 0.01 --betas 0.9 0.999 --weight_decay 0.0005 --num_epochs 1 --train_iterations 10
+    python client.py 3 --method_extract cnn --lr 0.01 --betas 0.9 0.999 --weight_decay 0.0005 --num_epochs 1 --train_iterations 10
 
     python client.py 2
 
-    python client.py 2 --method_extract hog --lr 0.001 --betas "(0.9, 0.999)" --weight_decay 0.0001 --num_epochs 50
+    python client.py 1 --method_extract hog --lr 0.001 --betas 0.9 0.999 --weight_decay 0.0001 --num_epochs 1 --train_iterations 10
+    python client.py 2 --method_extract hog --lr 0.001 --betas 0.9 0.999 --weight_decay 0.0001 --num_epochs 1 --train_iterations 10
+    python client.py 3 --method_extract hog --lr 0.001 --betas 0.9 0.999 --weight_decay 0.0001 --num_epochs 1 --train_iterations 10
 '''
