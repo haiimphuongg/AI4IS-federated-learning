@@ -1,10 +1,17 @@
 # AI4IS-federated-learning
 Repository for AI4IS subject - HCMUS 
 
+**Structure:**
+  - `preprocess.py`: Split data for client; extract HOG & CNN features; export csv file of feature vectors.
+  - `model.py`: Design model, training and validation functions.
+  - `server.py`: Server-side operation (receives weight from clients, computes average weight and sends back to each client).
+  - `client.py`: Client-side operations (loop execution: train local model, send weights to server, receive new weights, train model...)
+ 
+**Usage:**
 - Run `preprocess.py` to export csv file of feature vectors. This helps clients read data faster during demo.
-- Demo:
+- Federate Learning:
 
-  1. For Server, run `python server.py`
+  1. For Server, run `python server.py`.
 
   2. For each Client, run commands with the format (`client_id` is required):
   
