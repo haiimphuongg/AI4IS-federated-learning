@@ -30,9 +30,9 @@ SIZE = 1024
 FORMAT = "utf-8"
 DISCONNECT_MSG = "!DISCONNECT"
 
-def get_data(client_id=1, extract_method='hog'):
-    train_dataset_extracted, train_loader, val_loader = create_dataloader(client_id, extract_method)
-    return train_dataset_extracted, train_loader, val_loader
+# def get_data(client_id=1, extract_method='hog'):
+#     train_dataset_extracted, train_loader, val_loader = create_dataloader(client_id, extract_method)
+#     return train_dataset_extracted, train_loader, val_loader
 
 def client_train(model, train_loader, val_loader, lr, betas, weight_decay, num_epochs):
     torch.manual_seed(42)

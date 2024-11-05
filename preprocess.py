@@ -206,11 +206,12 @@ def save_dataset_to_csv():
     client1_train_dataset_HOG, client1_val_dataset_HOG = prepare_data(client1_dataset, targets[client_indices[0]], 'hog')
     client2_train_dataset_HOG, client2_val_dataset_HOG = prepare_data(client2_dataset, targets[client_indices[1]], 'hog')
     client3_train_dataset_HOG, client3_val_dataset_HOG = prepare_data(client3_dataset, targets[client_indices[2]], 'hog')
-
+    
     client1_train_dataset_CNN, client1_val_dataset_CNN = prepare_data(client1_dataset, targets[client_indices[0]], 'cnn')
     client2_train_dataset_CNN, client2_val_dataset_CNN = prepare_data(client2_dataset, targets[client_indices[1]], 'cnn')
     client3_train_dataset_CNN, client3_val_dataset_CNN = prepare_data(client3_dataset, targets[client_indices[2]], 'cnn')
-    
+
+
     # Export file
     export_csv(client1_train_dataset_HOG, "client1_train_dataset_HOG.csv")
     export_csv(client2_train_dataset_HOG, "client2_train_dataset_HOG.csv")
@@ -225,6 +226,20 @@ def save_dataset_to_csv():
     export_csv(client1_val_dataset_CNN, "client1_val_dataset_CNN.csv", 'cnn')
     export_csv(client2_val_dataset_CNN, "client2_val_dataset_CNN.csv", 'cnn')
     export_csv(client3_val_dataset_CNN, "client3_val_dataset_CNN.csv", 'cnn')
+
+
+    #Extract for test set
+    cnn_model = models.resnet34(pretrained=True)
+    cnn_model = nn.Sequential(*list(cnn_model.children())[:-1])
+    device='cuda' if torch.cuda.is_available() else 'cpu'
+    cnn_model = cnn_model.to(device)
+        
+    test_dataset_CNN = extract_cnn_features(cnn_model, test_dataset, batch_size=256)
+    test_dataset_HOG = extract_hog_for_dataset(test_dataset)
+
+
+    export_csv(test_dataset_HOG, "test_dataset_HOG.csv")
+    export_csv(test_dataset_CNN, "test_dataset_CNN.csv", 'cnn')
 
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@ import torch.nn as nn
 import numpy as np
 from math import sqrt
 from tqdm import tqdm
+from torch.nn import CrossEntropyLoss
 from sklearn.metrics import classification_report
 
 
@@ -39,7 +40,7 @@ class Classifier(nn.Module):
         return int_to_labels[target]
     
 
-def validate(model, val_dataloader, criterion, device = 'cuda' if torch.cuda.is_available() else 'cpu'):
+def validate(model, val_dataloader, criterion = CrossEntropyLoss(), device = 'cuda' if torch.cuda.is_available() else 'cpu'):
     model.eval()
     with torch.no_grad():
         all_predictions = []
