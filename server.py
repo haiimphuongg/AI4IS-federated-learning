@@ -93,6 +93,7 @@ def handle_client(conn, addr, model, test_dataloader):
     with lock:
         disconnect_cnt += 1
         if disconnect_cnt % 3 == 0:
+            print(averaged_weights)
             model.load_state_dict(averaged_weights)
             test(model, test_dataloader)
 
@@ -121,8 +122,10 @@ if __name__ == "__main__":
     test_dataset_extracted = None
     if args.method_extract == 'hog':
         test_dataset_extracted = pd.read_csv('test_dataset_HOG.csv')
+        test_dataset_extracted = pd.read_csv('client3_val_dataset_HOG.csv')
     else:
-        test_dataset_extracted = pd.read_csv('test_dataset_CNN.csv')
+        test_dataset_extracted = pd.read_csv('test_dataset_HOG.csv')
+        test_dataset_extracted = pd.read_csv('client3_val_dataset_CNN.csv')
     
     test_dataloader = create_dataloader(test_dataset_extracted, batch_size=256)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'

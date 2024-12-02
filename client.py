@@ -85,7 +85,8 @@ def main(client_id, method_extract, lr, betas, weight_decay, num_epochs, iterati
         response_length = int.from_bytes(client.recv(4), 'big')  # Receive length of response first
         response = client.recv(response_length)                  # Then receive the data based on length
         averaged_weights = pickle.loads(response)
-        
+        if iterations == 1:
+            print(averaged_weights)
         # Update model with new averaged weights
         model.load_state_dict(averaged_weights)
 

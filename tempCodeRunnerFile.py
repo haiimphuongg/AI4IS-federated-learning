@@ -1,0 +1,1 @@
+parser.add_argument("--method_extract", type=str, choices=['hog', 'cnn'], default='hog', help="Feature extraction method (default: 'hog')")
