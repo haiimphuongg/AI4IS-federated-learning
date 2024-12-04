@@ -5,7 +5,6 @@ LAB 2 – HỌC LIÊN KẾT (FEDERATE LEARNING) VÀ BẢO MẬT TẠI SERVER
 Nhóm 11:
     21120143 - Vũ Minh Thư
     21120312 - Phan Nguyên Phương
-
 '''
 
 import socket
