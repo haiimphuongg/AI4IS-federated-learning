@@ -49,7 +49,7 @@ class CustomFedAvg(FedAvg):
 strategy = FedAvg(
     fraction_fit=1.0,  # Select all available clients
     fraction_evaluate=0.0,  # Disable evaluation
-    min_available_clients=2,
+    min_available_clients=3,
     fit_metrics_aggregation_fn=weighted_average,
     initial_parameters=parameters,
 )

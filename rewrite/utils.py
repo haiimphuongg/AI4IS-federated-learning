@@ -60,10 +60,9 @@ def train(model, train_dataloader, val_dataloader,
         running_loss = 0
         train_predictions = []
         train_labels = []
-        for embeddings, labels in tqdm(train_dataloader):
+        for embeddings, labels in train_dataloader:
             embeddings = embeddings.to(device)
             labels = labels.to(device)
-            
             
             optimizer.zero_grad()
             outputs = model(embeddings)
@@ -78,17 +77,20 @@ def train(model, train_dataloader, val_dataloader,
 
         avg_epoch_train_loss = running_loss/len(train_dataloader)
         avg_val_loss, all_val_labels, all_val_predictions = validate(model, val_dataloader)
-        train_accuracy = accuracy_score(train_predictions, train_labels)
-        val_accuracy = accuracy_score(all_val_predictions, all_val_labels)
+        train_accuracy, val_accuracy = None, None
+        # train_accuracy = accuracy_score(train_predictions, train_labels)
+        # val_accuracy = accuracy_score(all_val_predictions, all_val_labels)
         train_f1 = f1_score(train_predictions, train_labels, average = 'macro')
         val_f1 = f1_score(all_val_predictions, all_val_labels, average = 'macro')
         
-        
-        print(f'Epoch [{epoch + 1}/{num_epoch}], Training Loss: {avg_epoch_train_loss:.4f}')
-        print(f'Epoch [{epoch + 1}/{num_epoch}], Train Accuracy: {train_accuracy:.4f}')
-        print(f'Epoch [{epoch + 1}/{num_epoch}], Validation Loss: {avg_val_loss:.4f}') 
-        print(f'Epoch [{epoch + 1}/{num_epoch}], Val Accuracy: {val_accuracy:.4f}')
-               
+        if epoch+1 == num_epoch: 
+            train_accuracy = accuracy_score(train_predictions, train_labels)
+            val_accuracy = accuracy_score(all_val_predictions, all_val_labels)
+            print(f'Epoch [{epoch + 1}/{num_epoch}], Training Loss: {avg_epoch_train_loss:.4f}')
+            print(f'Epoch [{epoch + 1}/{num_epoch}], Train Accuracy: {train_accuracy:.4f}')
+            print(f'Epoch [{epoch + 1}/{num_epoch}], Validation Loss: {avg_val_loss:.4f}') 
+            print(f'Epoch [{epoch + 1}/{num_epoch}], Val Accuracy: {val_accuracy:.4f}')
+                
         result = {
             "train_loss": avg_epoch_train_loss,
             "train_accuracy": train_accuracy,
@@ -107,7 +109,7 @@ def validate(model, val_dataloader, device = 'cuda' if torch.cuda.is_available()
     all_val_labels = []
     all_val_predictions = []
     with torch.no_grad():
-        for embeddings, labels in tqdm(val_dataloader):
+        for embeddings, labels in val_dataloader:
             embeddings = embeddings.to(device)
             labels = labels.to(device)
             outputs = model(embeddings)
@@ -116,7 +118,7 @@ def validate(model, val_dataloader, device = 'cuda' if torch.cuda.is_available()
             all_val_labels.extend(labels.tolist())
             all_val_predictions.extend(torch.argmax(outputs, 1).tolist())
     avg_val_loss = running_loss/len(val_dataloader)
-    print("Classification report:\n", classification_report(all_val_labels, all_val_predictions, zero_division = True))
+    # print("Classification report:\n", classification_report(all_val_labels, all_val_predictions, zero_division = True))
     return avg_val_loss, all_val_labels, all_val_predictions
     
 def load_cifar10(is_train = True):
@@ -227,3 +229,15 @@ def set_weights(net, parameters):
     net.load_state_dict(state_dict, strict=True)
     
 
+
+# train_dataset = load_cifar10(is_train=True)
+# test_dataset = load_cifar10(is_train=False)
+# client1_dataset, client2_dataset, client3_dataset = split_dataset_for_clients(train_dataset)
+# client1_extracted_dataset = extract_cnn_features(client1_dataset)
+# client2_extracted_dataset = extract_cnn_features(client2_dataset)
+# client3_extracted_dataset = extract_cnn_features(client3_dataset)
+# test_extracted_dataset = extract_cnn_features(test_dataset)
+# save_dataset_to_csv(client1_extracted_dataset, 'client1_dataset.csv')
+# save_dataset_to_csv(client2_extracted_dataset, 'client2_dataset.csv')
+# save_dataset_to_csv(client3_extracted_dataset, 'client3_dataset.csv')
+# save_dataset_to_csv(test_extracted_dataset, 'test_dataset.csv')
